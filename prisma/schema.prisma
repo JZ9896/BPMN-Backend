@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workflows         Workflow[]
+  workflowInstances WorkflowInstance[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+model Workflow {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  bpmnXml     String?        @db.Text
+  status      WorkflowStatus @default(DRAFT)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instances WorkflowInstance[]
+
+  @@map("workflows")
+}
+
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+model WorkflowInstance {
+  id         String                 @id @default(uuid())
+  status     WorkflowInstanceStatus @default(PENDING)
+  startedAt  DateTime               @default(now())
+  finishedAt DateTime?
+  variables  Json?
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tasks WorkflowTask[]
+
+  @@map("workflow_instances")
+}
+
+enum WorkflowInstanceStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model WorkflowTask {
+  id          String           @id @default(uuid())
+  name        String
+  description String?
+  status      WorkflowTaskStatus @default(PENDING)
+  assignedTo  String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  result      Json?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  instanceId String
+  instance   WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  @@map("workflow_tasks")
+}
+
+enum WorkflowTaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}

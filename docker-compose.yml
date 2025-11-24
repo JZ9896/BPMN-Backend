@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: bpmn-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bpmn_user
+      POSTGRES_PASSWORD: bpmn_password
+      POSTGRES_DB: bpmn_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bpmn-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bpmn_user -d bpmn_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicación Backend
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bpmn-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://bpmn_user:bpmn_password@postgres:5432/bpmn_db
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGINS: "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - bpmn-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis para caché (opcional, para futuras implementaciones)
+  redis:
+    image: redis:7-alpine
+    container_name: bpmn-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - bpmn-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  bpmn-network:
+    driver: bridge
