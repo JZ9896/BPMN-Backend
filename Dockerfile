@@ -3,6 +3,9 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# Argument para DATABASE_URL (solo para build)
+ARG DATABASE_URL
+
 # Copiar archivos de dependencias
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -13,7 +16,8 @@ RUN npm ci
 # Copiar código fuente
 COPY . .
 
-# Generar cliente de Prisma
+# Generar cliente de Prisma (requiere DATABASE_URL aunque no se conecte)
+ENV DATABASE_URL=${DATABASE_URL}
 RUN npx prisma generate
 
 # Compilar TypeScript
