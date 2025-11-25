@@ -8,6 +8,10 @@ on:
 
 env:
   NODE_VERSION: '18'
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+  NODE_ENV: production
 
 jobs:
   deploy:
