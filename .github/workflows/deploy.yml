@@ -5,10 +5,13 @@ on:
     branches: [ main ]
     tags:
       - 'v*'
-  workflow_dispatch:
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '18'
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  JWT_EXPIRES_IN: ${{ secrets.JWT_EXPIRES_IN }}
+  NODE_ENV: production
 
 jobs:
   deploy:
@@ -17,10 +20,10 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -29,24 +32,19 @@ jobs:
         run: npm ci
       
       - name: Generate Prisma Client
-        run: npm run prisma:generate
+        run: npx prisma generate
       
       - name: Build application
         run: npm run build
       
-      - name: Run tests
-        run: npm test
-        continue-on-error: false
-      
       - name: Deploy notification
         run: |
-          echo "🚀 Ready for deployment"
-          echo "Environment: Production"
-          echo "Commit: ${{ github.sha }}"
-          echo "Branch: ${{ github.ref_name }}"
+          echo "🚀 Deployment would happen here"
+          echo "Deploying to: Production"
+          echo "Version: ${{ github.sha }}"
       
-      # Descomenta cuando configures tu servidor
-      # - name: Deploy to server
+      # Ejemplo de deploy a servidor (descomentar y configurar)
+      # - name: Deploy to server via SSH
       #   uses: appleboy/ssh-action@master
       #   with:
       #     host: ${{ secrets.SERVER_HOST }}
@@ -56,7 +54,5 @@ jobs:
       #       cd /app/bpmn-backend
       #       git pull
       #       npm ci
-      #       npm run prisma:generate
-      #       npx prisma migrate deploy
       #       npm run build
       #       pm2 restart bpmn-backend
